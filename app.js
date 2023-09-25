@@ -210,7 +210,6 @@ const ViewTransitions = () => {
     };
 
     const HandleNavigationLinkClicked = (clickEvent) => {
-
         if ((clickEvent.target.host ?? location.host) != location.host) {
             return;
         }
@@ -261,13 +260,14 @@ const ViewTransitions = () => {
 };
 
 document.addEventListener("readystatechange", _ => {
-    UpdateBodyHasScrollbar();
     if (document.readyState != "complete") {
         return;
     }
+
     if ("showPopover" in sp) sp.showPopover(); else sp.style = `position:fixed;top:100%;left:100%;transform:translate(-100%,-100%)translateZ(1px);z-index:9999;`;
     ViewTransitions();
     Settings();
+    UpdateBodyHasScrollbar();
     let syntaxHighlightingLoaded;
     var OptionalSyntaxHighlighting = () => {
         if (!navigator.connection?.saveData) {

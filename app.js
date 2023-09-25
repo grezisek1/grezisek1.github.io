@@ -210,11 +210,12 @@ const ViewTransitions = () => {
     };
 
     const HandleNavigationLinkClicked = (clickEvent) => {
+
         if ((clickEvent.target.host ?? location.host) != location.host) {
             return;
         }
 
-        const hashIndex = location.href.lastIndexOf("#");
+        const hashIndex = clickEvent.target.href.lastIndexOf("#");
         const newLink = hashIndex == -1 ? clickEvent.target.href : clickEvent.target.href.slice(0, hashIndex);
 
         if (lastLink == newLink) {

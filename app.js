@@ -195,9 +195,11 @@ const ViewTransitions = () => {
                 OptionalSyntaxHighlighting();
             }
 
-            MouseEffects();
+            mouseEffectsNodes = new Map();
+            setTimeout(MouseEffects, 0);
 
-            document.querySelectorAll(linksQuery).forEach(link => link.addEventListener("click", HandleNavigationLinkClicked));
+            document.querySelectorAll(linksQuery)
+                .forEach(link => link.addEventListener("click", HandleNavigationLinkClicked));
 
             tempHrefPrevious = location.href;
             document.documentElement.dispatchEvent(new CustomEvent("viewchange"));
@@ -301,23 +303,56 @@ document.addEventListener("readystatechange", _ => {
         OptionalSyntaxHighlighting();
     }
 });
+let mouseEffectsNodes = new Map();
+// const mouseEffectsNodes = new Set();
+const topName = "--mpxt";
+const leftName = "--mpxl";
+const meSetClass = "mset";
+const meStylesAttr = "style";
+let meNode;
+let mePos;
+let meRect;
+let meLeft;
+let meTop;
+const MoveMouseEffects = (e) => {
+    // for (meNode of mouseEffectsNodes) {
+    //     meRect = meNode.getBoundingClientRect();
+    //     meTop = e.clientY - meRect.top;
+    //     if (meTop > window.innerHeight || meTop < -window.innerHeight) {
+    //         continue;
+    //     }
+    //     meLeft = e.clientX - meRect.left;
+    //     meNode.setAttribute(meStylesAttr, `${topName}:${meTop}px;${leftName}:${meLeft}px`);
+    //     meNode.classList.add(meSetClass);
+    // }
 
-const mouseEffectsNodes = new Set();
-const UpdateMouseEffects = (e) => {
-    for (const node of mouseEffectsNodes) {
-        const rect = node.getBoundingClientRect();
-        node.style.setProperty('--mpxt', `${e.clientY - rect.top}px`);
-        node.style.setProperty('--mpxl', `${e.clientX - rect.left}px`);
-        node.classList.add("mset");
+    for (meNode of mouseEffectsNodes) {
+        if (meNode[1][0] > window.innerHeight || meNode[1][0] < -window.innerHeight) {
+            continue;
+        }
+        meNode[0].setAttribute(meStylesAttr, `${topName}:${e.clientY - meNode[1][0]}px;${leftName}:${e.clientX - meNode[1][1]}px`);
+        meNode[0].classList.add(meSetClass);
     }
 };
+const ScrollMouseEffects = (e) => {
+    let tempRect;
+    for (const node of mouseEffectsNodes) {
+        tempRect = node[0].getBoundingClientRect();
+        node[1][0] = Math.round(tempRect.top);
+        node[1][1] = Math.round(tempRect.left);
+    }
+}
 const MouseEffects = () => {
     if ("ontouchstart" in document.documentElement) {
         return;
     }
+    let tempRect;
     for (const node of document.querySelectorAll(".m, button, pre code")) {
-        mouseEffectsNodes.add(node);
+        tempRect = node.getBoundingClientRect();
+        mouseEffectsNodes.set(node, [Math.round(tempRect.top), Math.round(tempRect.left)]);
     }
 
-    addEventListener("mousemove", UpdateMouseEffects, { passive: true });
+    addEventListener("mousemove", MoveMouseEffects, passive);
+    addEventListener("scroll", ScrollMouseEffects, passive);
+    addEventListener("resize", ScrollMouseEffects, passive);
 };

@@ -148,7 +148,6 @@ const ViewTransitions = () => {
     let tempAbortController = null;
 
     const UpdateView = async (href, pushState = false) => {
-        document.body.classList.add("is-loading");
         try {
             const viewTransition = document.startViewTransition(async () => {
                 tempHref = href;
@@ -160,6 +159,7 @@ const ViewTransitions = () => {
                     history.pushState(null, "", href);
                 }
 
+                const metaDesc = document.querySelector("meta[name='description']");
                 const header = document.querySelector("#h");
                 const content = document.querySelector("#content");
                 const footer = document.querySelector("#f");
@@ -179,10 +179,11 @@ const ViewTransitions = () => {
                 tempHref = null;
                 tempAbortController = null;
 
+                document.title = tempNode.querySelector("title").textContent;
+                metaDesc.replaceWith(tempNode.querySelector("meta[name='description']"));
                 header.replaceWith(tempNode.querySelector("#h"));
                 content.replaceWith(tempNode.querySelector("#content"));
                 footer.replaceWith(tempNode.querySelector("#f"));
-                document.title = tempNode.querySelector("title").textContent;
             });
 
             await viewTransition.updateCallbackDone;
@@ -190,13 +191,12 @@ const ViewTransitions = () => {
             if (pushState) {
                 window.scrollTo(0, 0);
             }
+
             UpdateBodyHasScrollbar();
             if (typeof OptionalSyntaxHighlighting != "undefined") {
                 OptionalSyntaxHighlighting();
             }
 
-            mouseEffectsNodes = new Map();
-            setTimeout(MouseEffects, 0);
 
             document.querySelectorAll(linksQuery)
                 .forEach(link => link.addEventListener("click", HandleNavigationLinkClicked));
@@ -204,11 +204,14 @@ const ViewTransitions = () => {
             tempHrefPrevious = location.href;
             document.documentElement.dispatchEvent(new CustomEvent("viewchange"));
 
+            await viewTransition.finished;
+
+            mouseEffectsNodes = new Map();
+            MouseEffects();
+
         } catch (error) {
             console.debug(error);
         }
-
-        document.body.classList.remove("is-loading");
     };
 
     const HandleNavigationLinkClicked = (clickEvent) => {
@@ -304,7 +307,6 @@ document.addEventListener("readystatechange", _ => {
     }
 });
 let mouseEffectsNodes = new Map();
-// const mouseEffectsNodes = new Set();
 const topName = "--mpxt";
 const leftName = "--mpxl";
 const meSetClass = "mset";
@@ -315,17 +317,6 @@ let meRect;
 let meLeft;
 let meTop;
 const MoveMouseEffects = (e) => {
-    // for (meNode of mouseEffectsNodes) {
-    //     meRect = meNode.getBoundingClientRect();
-    //     meTop = e.clientY - meRect.top;
-    //     if (meTop > window.innerHeight || meTop < -window.innerHeight) {
-    //         continue;
-    //     }
-    //     meLeft = e.clientX - meRect.left;
-    //     meNode.setAttribute(meStylesAttr, `${topName}:${meTop}px;${leftName}:${meLeft}px`);
-    //     meNode.classList.add(meSetClass);
-    // }
-
     for (meNode of mouseEffectsNodes) {
         if (meNode[1][0] > window.innerHeight || meNode[1][0] < -window.innerHeight) {
             continue;

@@ -210,7 +210,8 @@ button {
     padding: .5rem 1rem;
     background: var(--cb);
     color: var(--cc);
-    font-family: var(--ff)
+    font-family: var(--ff);
+    font-size: inherit;
 }
 
 details, details>div,

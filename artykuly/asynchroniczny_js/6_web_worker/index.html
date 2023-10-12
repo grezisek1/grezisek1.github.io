@@ -7,27 +7,35 @@
     const workerBlob = new Blob([workerCode], { type: "text/javascript" });
     const workerObjectURL = URL.createObjectURL(workerBlob);
     const worker = new Worker(workerObjectURL);
+
     const queue = [];
     worker.onmessage = ({ data }) => (queue.shift())(data);
     const work = (data) => new Promise(resolve => {
         queue.push(resolve);
         worker.postMessage({ data });
     });
+
     return work;
 };
+
 const hardWork = ({ data }) => {
     const timestamp = performance.now();
+
     while (timestamp + data > performance.now()) {
         continue;
     }
+
     return "end";
 };
+
 const hardWorkWorker1 = createWorker(hardWork);
 const hardWorkWorker2 = createWorker(hardWork);
 const hardWorkWorker3 = createWorker(hardWork);
+
 hardWorkWorker1(1000).then(console.log);
 hardWorkWorker2(1000).then(console.log);
 hardWorkWorker3(1000).then(console.log);
+
 // sekunda przerwy
 // end
 // end

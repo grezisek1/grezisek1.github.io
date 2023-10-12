@@ -5,19 +5,23 @@
 console.log(1);
 setTimeout(() => console.log(3), 0);
 console.log(2);
+
 // 1
 // 2
 // 3
 // 4
+
 requestIdleCallback(() => console.log(3));
 console.log(1);
 setTimeout(() => console.log(4), 1000);
 console.log(2);
+
 // 1
 // 2
 // 3
 // sekunda przerwy
 // 4
+
 const timestamp = performance.now();
 console.log(1);
 requestIdleCallback(() => console.log(5));
@@ -28,6 +32,7 @@ while (timestamp + 1000 > performance.now()) {
     continue;
 }
 console.log(2);
+
 // 1
 // sekunda przerwy
 // 2

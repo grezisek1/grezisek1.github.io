@@ -5,6 +5,7 @@
             Po upływie czasu, instrukcje są ściągane na stos.</p><pre><code>console.log(1);
 setTimeout(() => console.log(3), 0);
 console.log(2);
+
 // 1
 // 2
 // 3</code></pre></section><section><h2>To nie jest asynchroniczny javascript</h2><p>Te metody mają jedną zasadniczą wadę - muszą czekać na wolną chwilę, czyli moment, gdy stos jest pusty.
@@ -15,6 +16,7 @@ while (timestamp + 1000 > performance.now()) {
     continue;
 }
 console.log(2);
+
 // 1
 // sekunda przerwy
 // 2
@@ -22,6 +24,7 @@ console.log(2);
             Czy wtedy kod jest asynchroniczny?</p><pre><code>function Async(callback) {
     setTimeout(callback, 0);
 }
+
 let timestamp = performance.now();
 Async(() => console.log(1));
 Async(() => console.log(2));
@@ -29,10 +32,12 @@ while (timestamp + 1000 > performance.now()) {
     continue;
 }
 Async(() => console.log(3));
+
 // sekunda przerwy
 // 1
 // 2
 // 3
+
 timestamp = performance.now();
 Async(() => console.log(1));
 Async(() => console.log(2));
@@ -42,6 +47,7 @@ Async(() => {
     }
 });
 Async(() => console.log(3));
+
 // 1
 // 2
 // sekunda przerwy

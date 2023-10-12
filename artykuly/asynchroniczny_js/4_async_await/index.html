@@ -3,35 +3,48 @@
             Do tego celu służy oznaczenie async przed deklaracją funkcji.
             Z uwagi na to, że instrukcja może być wstrzymana, funkcja async automatycznie używa Promise do zwrócenia rezultatu.
             Gdy instrukcja kończy się a funkcja async zwraca wartość, Promise zostaje automatycznie rozstrzygnięty z użyciem zwracanej wartości.</p><pre><code>console.log(1);
+
 let promise = new Promise((resolve, reject) => {
     console.log("3 start");
+
     setTimeout(() => resolve(3), 1000);
 });
+
 async function test() {
     const result = await promise;
     console.log(result);
 }
+
 test();
+
 console.log(2);
+
 // 1
 // "3 start"
 // 2
 // sekunda przerwy
 // 3</code></pre><p>Instrukcja nadal może powodować blokadę głównego wątku, jeśli zawiera czasochłonne, synchroniczne kroki.</p><pre><code>const timestamp = performance.now();
+
 console.log(1);
+
 let promise = new Promise((resolve, reject) => {
     console.log("3 start");
     setTimeout(() => resolve(3), 1000);
 });
+
 async function test(additionalMessage) {
     while (timestamp + 500 > performance.now()) {
         continue;
     }
+
     const result = await promise;
     return additionalMessage + result.toString();
 }
+
 test("async: ").then(console.log);
+
 console.log(2);
+
 // 1
 // "3 start"
 // pół sekundy przerwy (blokada)

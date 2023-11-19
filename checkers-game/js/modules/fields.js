@@ -7,7 +7,6 @@ export default class Fields {
         this.list = new Array(fieldsCount);
         for (let i = 0; i < fieldsCount; i++) {
             this.list[i] = fieldNodeTemplate.cloneNode();
-            this.list[i].innerHTML = i;
             boardNode.appendChild(this.list[i]);
         }
     }

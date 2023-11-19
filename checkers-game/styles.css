@@ -1,0 +1,188 @@
+body {
+    display: grid;
+    grid-template-columns: auto 380px minmax(auto, 1066px) auto;
+    gap: 24px;
+    margin: 3% 0;
+    font-size: 40px;
+    font-family: "Unica One", sans-serif;
+    background: #f6f6f6;
+    color: #1c1c1c;
+}
+
+h1,
+h2 {
+    font-weight: 400;
+}
+
+h1 {
+    margin: 0 0 12px;
+    font-size: 50px;
+}
+
+h2 {
+    margin: 0;
+    font-size: inherit;
+}
+
+p {
+    margin: 0;
+}
+
+game-piece {
+    --size: 64px;
+    --_bw: calc(var(--size) * 0.09375);
+    --_size: calc(var(--size) - var(--_bw));
+    --_x: calc(var(--field_size) * var(--x));
+    --_y: calc(var(--field_size) * var(--y));
+    --_s:  calc(64 / 70);
+    display: block;
+    width: var(--_size);
+    height: var(--_size);
+    border-radius: 50%;
+    box-shadow: 0 4px 4px 0 #00000040, inset 0 0 4px 2px #00000030;
+    border: var(--_bw) solid transparent;
+    transform: translate(var(--_x), var(--_y)) scale(var(--_s));
+    transition: 0.3s ease-in-out;
+    transition-property: transform, opacity;
+    pointer-events: none;
+    &[data-color="white"] {
+        background: #fff;
+        color: #000;
+    }
+    &[data-color="black"] {
+        background: #D24204;
+        color: #fff;
+    }
+    &[data-type="king"]::before {
+        --_size: calc(var(--size) * 24 / 64);
+        content: "";
+        position: absolute;
+        top: calc(50% - var(--_size) / 2 - 2px);
+        left: calc(50% - var(--_size) / 2 - 2px);
+        display: block;
+        width: var(--_size);
+        height: var(--_size);
+        border-radius: 50%;
+        border: 2px solid;
+    }
+    &[data-type="taken"] {
+        opacity: 0;
+    }
+}
+
+#app {
+    grid-column: 2/4;
+    display: grid;
+    grid-template-columns: subgrid;
+    max-width: 1440px;
+}
+
+#ui {
+    grid-column: 1/2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#winner {
+    place-items: center;
+    place-content: center;
+    gap: 20px;
+    min-width: min(350px, 90vw);
+    max-width: unset;
+    max-height: unset;
+    padding: 45px 20px;
+    border-radius: 13px;
+    border: unset;
+    outline: unset;
+    background: #f6f6f6;
+
+    &[open] {
+        display: grid;
+    }
+
+    &::backdrop {
+        background: #1c1c1c7f;
+    }
+}
+
+#board {
+    --field_size: 70px;
+    --_minus_field_size: calc(var(--field_size) * -1);
+    --_two_field_size: calc(var(--field_size) * 2);
+    grid-column: 2/3;
+    justify-self: end;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(10, var(--field_size));
+    aspect-ratio: 1;
+    border: 16px solid #1c1c1c;
+    background-color: #e7c673;
+    background-image: linear-gradient(45deg, #e1ab1f 25%, transparent 25%),
+        linear-gradient(-45deg, #e1ab1f 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e1ab1f 75%),
+        linear-gradient(-45deg, transparent 75%, #e1ab1f 75%);
+    background-size: var(--_two_field_size) var(--_two_field_size);
+    background-position: 0 0,
+        0 var(--field_size),
+        var(--field_size) var(--_minus_field_size),
+        var(--_minus_field_size) 0px;
+
+    game-piece {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: translate(var(--_x), var(--_y)) scale(var(--_s));
+    }
+}
+
+#autoplay_toggler {
+    order: 1;
+}
+
+.row-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #fff;
+    game-piece {
+        --size: 32px;
+    }
+}
+
+.score {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.field {
+    border: unset;
+    background: unset;
+
+    &:focus-visible,
+    &.field--selected,
+    &.field--highlighted {
+        outline-width: 2px;
+        outline-offset: -1px;
+    }
+
+    &:focus-visible {
+        outline: dotted #1c1c1c;
+    }
+
+    &.field--selected,
+    &.field--highlighted {
+        outline: solid #1c1c1c;
+    }
+
+    &.field--selected:focus-visible {
+        outline: dashed royalblue;
+    }
+
+    &.field--highlighted:focus-visible {
+        outline: double green;
+    }
+}

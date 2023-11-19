@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Checkers</title>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Unica+One&display=swap">
+	<link href="./styles.css" rel="stylesheet">
+</head>
+<body>
+	<div id="app">
+		<aside id="ui">
+			<h1>warcaby</h1>
+			<div class="row-box">
+				<p>ruch</p>
+				<game-piece id="turn" data-color="white"></game-piece>
+			</div>
+			<div class="row-box">
+				<p>wynik</p>
+				<div class="score">
+					<game-piece data-color="white"></game-piece>
+					<p>
+						<span id="white_score">0</span>
+						:
+						<span id="red_score">0</span>
+					</p>
+					<game-piece data-color="black"></game-piece>
+				</div>
+			</div>
+			<label class="row-box">
+				<input type="checkbox" id="autoplay_toggler">
+				<span>auto</span>
+			</label>
+			<dialog id="winner">
+				<h2>Zwycięża</h2>
+				<game-piece id="winner_piece" data-color="white"></game-piece>
+			</dialog>
+		</aside>
+		<div id="board"></div>
+	</div>
+	<script type="module" src="./js/app.js"></script>
+</body>
+</html>

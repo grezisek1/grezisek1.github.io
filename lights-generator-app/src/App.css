@@ -1,0 +1,22 @@
+#root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+.header {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-content: start;
+    gap: 50px;
+}
+.controls {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+    gap: 20px;
+}
+.lights {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(1px, 109px));
+    margin-top: 50px;
+}

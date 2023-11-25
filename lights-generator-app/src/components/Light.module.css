@@ -1,0 +1,28 @@
+.light {
+    all: unset;
+    display: block;
+    width: 109px;
+    height: 109px;
+
+    &[data-state=""] {
+        background: url("../../public/images/light-off.svg");
+    }
+    &[data-state="blue"] {
+        background: url("../../public/images/light-blue.svg");
+    }
+    &[data-state="green"] {
+        background: url("../../public/images/light-green.svg");
+    }
+    &[data-state="orange"] {
+        background: url("../../public/images/light-orange.svg");
+    }
+    &[data-state="pink"] {
+        background: url("../../public/images/light-pink.svg");
+    }
+    &[data-state="red"] {
+        background: url("../../public/images/light-red.svg");
+    }
+    &[data-state="yellow"] {
+        background: url("../../public/images/light-yellow.svg");
+    }
+}

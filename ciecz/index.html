@@ -3,44 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ciecz </title>
+    <title>Ciecz</title>
 </head>
 <body>
 <div style="position:absolute;width:calc(100% - 16px);aspect-ratio:16/9;"></div>
 <script type="module">
-    const FPS = 1200;
-    const count = 20000;
-    const targetDensity = 0.001;
-    const pressureMult = 100;
-    const viscosityMult = 1;
-    const wallCorr = 1.0003;
-    const wallDamp = 0.3;
-    const drawRadius = 12;
+    const FPS = 600;
+    const count = 10000;
+    const targetDensity = 0.00035;
+    const airFriction = 0.00001;
+    const fluidFriction = 0.002;
+    const pressureMult = 200;
+    const viscosityMult = 0.018;
+    const wallDamp = 0.99;
+    const drawRadius = 16;
     const cellCapacity = 16;
-    const velocityDamp = 0.9997;
-    const velocityMax = 25;
-    const futureFrametime = 6;
-    const G = 0.009;
-    const workgroupX = 32;
-    const forceSubsteps = 8;
+    const G = 0.0098;
+    const explosionSize = 7;
+    
+    const futureFrametime = 5;
+    const minNegativeTwoDensities = -0.05;
+    const workgroupX = 2;
 
     const fixedFrametime = 1000 / FPS;
     const canvasWidth = 1920;
     const canvasHeight = 1080;
     const simulationWidth = 7680;
     const simulationHeight = 4320;
-    const cellsX = 160 + 2;
-    const cellsY = 90 + 2;
+    const cellsX = 96 + 2;
+    const cellsY = 54 + 2;
     const cells = cellsX * cellsY;
-    const cellEdge = simulationWidth / 80 / 2;
-    const smoothingRadius = cellEdge * 1.2;
-    const explosionRadius = cellEdge * 10;
+    const cellEdge = simulationWidth / 96;
+    const explosionRadius = cellEdge * explosionSize;
     const gridStaticLen = cells * cellCapacity;
     const gridBufferSize = gridStaticLen * 4;
-    const maxCount = cellCapacity * 160 * 90;
-    console.assert(count < gridStaticLen, "max count");
-
     const emptyGrid = new Uint32Array(gridStaticLen);
+
     const canvas = document.createElement("canvas");
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -76,20 +74,9 @@
         return color;
     }`;
     
-    const bindings = `
-    @group(0) @binding(0) var<storage, read_write> interaction : vec4<u32>;
-    @group(0) @binding(1) var<storage, read_write> positions : array<vec2<f32>, ${count}>;
-    @group(0) @binding(2) var<storage, read_write> positionsFuture : array<vec2<f32>, ${count}>;
-    @group(0) @binding(3) var<storage, read_write> velVis : array<vec4<f32>, ${count}>;
-    @group(0) @binding(4) var<storage, read_write> densities : array<f32, ${count}>;
-    @group(0) @binding(5) var<storage, read_write> grid : array<array<array<array<u32, ${cellCapacity}>, ${cellsY}>, ${cellsX}>, 2>;
-    @group(0) @binding(6) var<storage, read_write> passIndexes : array<u32, 3>;
-    @group(0) @binding(7) var<storage, read_write> out : array<vec4<f32>, ${count}>;
-    `;
     const fnSetup = `fn setup(pi: u32) {
         velVis[pi].z = 0;
         velVis[pi].w = 0;
-        densities[pi] = 0.0000000000001;
         if (interaction[0] == 1) {
             var dx = f32(interaction.z) - positions[pi].x;
             var dy = f32(interaction.w) - positions[pi].y;
@@ -101,11 +88,11 @@
                 var s = ${explosionRadius} - dist;
                 
                 if (interaction[1] == 1) {
-                    velVis[pi].x += nx * s / 8000 * ${fixedFrametime};
-                    velVis[pi].y += ny * s / 8000 * ${fixedFrametime};
+                    velVis[pi].x += nx * s / 6000 * ${fixedFrametime};
+                    velVis[pi].y += ny * s / 6000 * ${fixedFrametime};
                 } else {
-                    velVis[pi].x -= nx * s / 3000 * ${fixedFrametime};
-                    velVis[pi].y -= ny * s / 3000 * ${fixedFrametime};
+                    velVis[pi].x -= nx * s / 1500 * ${fixedFrametime};
+                    velVis[pi].y -= ny * s / 1500 * ${fixedFrametime};
                 }
             }
         }
@@ -114,17 +101,19 @@
     }`;
     const fnUpdateDensityViscosity = `fn updateDensityViscosity(pi: u32) {
         var gridPos = posToGridPos(positions[pi]);
-        var cell = getCell(gridPos);
-        var _gridPos = vec2<i32>(0, 0);
+        densities[pi] = 0.0;
+        var cell: array<u32, ${cellCapacity}>;
+        var _len: i32;
+        velVis[pi].z = 0;
+        velVis[pi].w = 0;
         for (var ox = -1; ox <= 1; ox++) {
-            _gridPos.x = gridPos.x + ox;
+            var gx = gridPos.x + ox;
             for (var oy = -1; oy <= 1; oy++) {
-                _gridPos.y = gridPos.y + oy;
-
-                var _cell = getCell(_gridPos);
-                var _len = i32(_cell[0]);
+                var gy = gridPos.y + oy;
+                cell = grid[passIndexes[0]][gx][gy];
+                _len = i32(cell[0]);
                 for (var ni = 1; ni <= _len; ni++) {
-                    var _pi = _cell[ni];
+                    var _pi = cell[ni];
                     if (pi == _pi) {
                         continue;
                     }
@@ -132,137 +121,108 @@
                     var futureDistSq = pow(positionsFuture[_pi].x - positionsFuture[pi].x, 2)
                         + pow(positionsFuture[_pi].y - positionsFuture[pi].y, 2);
 
-                    if (futureDistSq > ${smoothingRadius**2}) {
+                    if (futureDistSq > ${cellEdge**2}) {
                         continue;
                     }
 
-                    densities[pi] += pow(${smoothingRadius} - pow(futureDistSq, 0.5), 2) / ${Math.PI * (smoothingRadius**4) / 6};
-                    
-                    var vd = ${viscosityMult} * pow(${smoothingRadius} - pow(futureDistSq, 0.38), 2) / ${Math.PI * (smoothingRadius**4) / 6};
-                    velVis[pi].z += (velVis[_pi].x - velVis[pi].x) * vd;
-                    velVis[pi].w += (velVis[_pi].y - velVis[pi].y) * vd;
+                    var dd = pow(${cellEdge} - pow(futureDistSq, 0.5), 2);
+                    densities[pi] += dd;
+                    velVis[pi].z += (velVis[_pi].x - velVis[pi].x) * dd;
+                    velVis[pi].w += (velVis[_pi].y - velVis[pi].y) * dd;
                 }
             }
         }
+        densities[pi] /= ${Math.PI * (cellEdge**4) / 6};
+        velVis[pi].z *= ${viscosityMult / (Math.PI * (cellEdge**4) / 6)};
+        velVis[pi].w *= ${viscosityMult / (Math.PI * (cellEdge**4) / 6)};
     }`;
     const fnApplyForce = `fn applyForce(pi: u32) {
-        var pressureForce = calcPressureForce(pi) / densities[pi];
-        var viscosityForce = velVis[pi].zw * densities[pi] / ${targetDensity};
-        var force = pressureForce + viscosityForce + vec2<f32>(0, -${G});
-
-        applyForceSubstep(pi, force);
-
-        var gridPosNew = posToGridPos(positions[pi]);
-        addToGrid(gridPosNew, pi);
-    }
-    fn applyForceEuler(pi: u32, force: vec2<f32>) {
-        var newVel = velVis[pi].xy * ${velocityDamp} + force * ${fixedFrametime};
-        newVel.x = min(${velocityMax}, max(newVel.x, -${velocityMax}));
-        newVel.y = min(${velocityMax}, max(newVel.y, -${velocityMax}));
-        var newPos = positions[pi] + newVel * ${fixedFrametime};
-
-        if (newPos.x < 1) {
-            newVel.x = abs(newVel.x) * ${wallDamp};
-            newPos.x = ${wallCorr};
-        } else if (newPos.x >= ${simulationWidth - 1}) {
-            newVel.x = -abs(newVel.x) * ${wallDamp};
-            newPos.x = ${simulationWidth} - ${wallCorr};
-        }
-        if (newPos.y < 1) {
-            newVel.y = abs(newVel.y) * ${wallDamp};
-            newPos.y = ${wallCorr};
-        } else if (newPos.y >= ${simulationHeight - 1}) {
-            newVel.y = -abs(newVel.y) * ${wallDamp};
-            newPos.y = ${simulationHeight} - ${wallCorr};
-        }
-        positions[pi] = newPos;
-        velVis[pi].x = newVel.x;
-        velVis[pi].y = newVel.y;
-    }
-    fn applyForceSubstep(pi: u32, force: vec2<f32>) {
-        var newVel = velVis[pi].xy;
-        var newPos = positions[pi];
-        for (var s = 0; s < ${forceSubsteps}; s++) {
-            newVel = (newVel + force * ${fixedFrametime / forceSubsteps}) * ${1 - (1 - velocityDamp) / forceSubsteps};
-            newPos = newPos + newVel * ${fixedFrametime / forceSubsteps};
-        }
-
-        if (newPos.x < 1) {
-            newVel.x = abs(newVel.x) * ${wallDamp};
-            newPos.x = ${wallCorr};
-        } else if (newPos.x >= ${simulationWidth - 1}) {
-            newVel.x = -abs(newVel.x) * ${wallDamp};
-            newPos.x = ${simulationWidth} - ${wallCorr};
-        }
-        if (newPos.y < 1) {
-            newVel.y = abs(newVel.y) * ${wallDamp};
-            newPos.y = ${wallCorr};
-        } else if (newPos.y >= ${simulationHeight - 1}) {
-            newVel.y = -abs(newVel.y) * ${wallDamp};
-            newPos.y = ${simulationHeight} - ${wallCorr};
-        }
-        positions[pi] = newPos;
-        velVis[pi].x = newVel.x;
-        velVis[pi].y = newVel.y;
-    }`;
-    const fnCalcPressureForce = `fn calcPressureForce(pi: u32) -> vec2<f32> {
         var gridPos = posToGridPos(positions[pi]);
-        var pForce = vec2<f32>(0, 0);
-        var _gridPos = vec2<i32>(0, 0);
-        for (var ox = -1; ox <= 1; ox++) {
-            _gridPos.x = gridPos.x + ox;
-            for (var oy = -1; oy <= 1; oy++) {
-                _gridPos.y = gridPos.y + oy;
+        var force = vec2<f32>(0, 0);
+        if (densities[pi] > 0) {
+            var _cell: array<u32, ${cellCapacity}>;
+            var _len: i32;
+            for (var ox = -1; ox <= 1; ox++) {
+                var gx = gridPos.x + ox;
+                for (var oy = -1; oy <= 1; oy++) {
+                    var gy = gridPos.y + oy;
+                    _cell = grid[passIndexes[0]][gx][gy];
+                    _len = i32(_cell[0]);
+                    for (var ni = 1; ni <= _len; ni++) {
+                        var _pi = _cell[ni];
+                        if (pi == _pi) {
+                            continue;
+                        }
+                        if (densities[_pi] == 0) {
+                            continue;
+                        }
+                        var manDistFuture = positionsFuture[_pi] - positionsFuture[pi];
+                        var eucDistSqFuture = pow(manDistFuture.x, 2) + pow(manDistFuture.y, 2);
+                        if (eucDistSqFuture > ${cellEdge**2}) {
+                            continue;
+                        }
+                        var eucDistFuture: f32;
+                        if (eucDistSqFuture < 1) {
+                            eucDistFuture = 1;
+                        } else {
+                            eucDistFuture = pow(eucDistSqFuture, 0.5);
+                        }
+                        var twoDensities = (
+                            (densities[pi] - ${targetDensity}) / densities[pi]
+                            + (densities[_pi] - ${targetDensity}) / densities[_pi]
+                        );
+                        if (twoDensities < 0) {
+                            twoDensities = max(${minNegativeTwoDensities}, twoDensities);
+                        }
 
-                var _cell = getCell(_gridPos);
-                var _len = i32(_cell[0]);
-                for (var ni = 1; ni <= _len; ni++) {
-                    var _pi = _cell[ni];
-                    if (pi == _cell[ni]) {
-                        continue;
+                        var eigenVec = manDistFuture / eucDistFuture;
+                        force += eigenVec * twoDensities * (eucDistFuture - ${cellEdge});
                     }
-
-                    var manDistFuture = positionsFuture[_pi] - positionsFuture[pi];
-                    var eucDistSqFuture = pow(manDistFuture.x, 2) + pow(manDistFuture.y, 2);
-                    if (eucDistSqFuture > ${smoothingRadius**2}) {
-                        continue;
-                    }
-                    if (eucDistSqFuture < 2) {
-                        continue;
-                    }
-                    var eucDistFuture = pow(eucDistSqFuture, 0.5);
-                    var twoDensities = (
-                        (densities[pi] - ${targetDensity}) / densities[pi]
-                        + (densities[_pi] - ${targetDensity}) / densities[_pi]
-                    );
-                    if (twoDensities < 0) {
-                        twoDensities = max(-0.007, twoDensities);
-                    } else if (eucDistFuture < 24) {
-                        twoDensities += twoDensities * (24 - eucDistFuture) / 6;
-                    }
-                    pForce += manDistFuture / eucDistFuture * twoDensities * ${pressureMult * 6 / ((smoothingRadius**4) * Math.PI)} * (eucDistFuture - ${smoothingRadius});
                 }
             }
+            force *= ${pressureMult * 6 / ((cellEdge**4) * Math.PI)} / densities[pi];
         }
-        return pForce;
-    }`;
-    const gridFunctions = `
-    fn getCell(gridPos: vec2<i32>) -> array<u32, ${cellCapacity}> {
-        return grid[passIndexes[0]][gridPos.x][gridPos.y];
-    }
-    fn addToGrid(gridPos: vec2<i32>, value: u32) {
-        var length = grid[passIndexes[1]][gridPos.x][gridPos.y][0] + 1;
-        grid[passIndexes[1]][gridPos.x][gridPos.y][length] = value;
-        grid[passIndexes[1]][gridPos.x][gridPos.y][0] = length;
-    }
-    fn posToGridPos(pos: vec2<f32>) -> vec2<i32> {
-        return vec2<i32>(
-            i32(floor(pos.x / ${cellEdge})) + 1,
-            i32(floor(pos.y / ${cellEdge})) + 1,
-        );
+
+        force += vec2<f32>(0, -${G});
+        if (densities[pi] < ${targetDensity}) {
+            force -= sign(velVis[pi].xy) * pow(velVis[pi].xy, vec2(2, 2)) * ${airFriction};
+        } else {
+            force += velVis[pi].zw * densities[pi] / ${targetDensity};
+            force -= sign(velVis[pi].xy) * pow(velVis[pi].xy, vec2(2, 2)) * densities[pi] / 2 * ${fluidFriction};
+        }
+        var newVel = velVis[pi].xy + force * ${fixedFrametime};
+        var newPos = positions[pi] + newVel * ${fixedFrametime};
+        if (newPos.x < 1) {
+            newVel.x = abs(newVel.x) * ${wallDamp};
+            newPos.x = 1;
+        } else if (newPos.x >= ${simulationWidth - 1}) {
+            newVel.x = -abs(newVel.x) * ${wallDamp};
+            newPos.x = ${simulationWidth};
+        }
+        if (newPos.y < 1) {
+            newVel.y = abs(newVel.y) * ${wallDamp};
+            newPos.y = 1;
+        } else if (newPos.y >= ${simulationHeight - 1}) {
+            newVel.y = -abs(newVel.y) * ${wallDamp};
+            newPos.y = ${simulationHeight};
+        }
+        positions[pi] = newPos;
+        velVis[pi].x = newVel.x;
+        velVis[pi].y = newVel.y;
+        var gridPosNew = posToGridPos(positions[pi]);
+        var length = grid[passIndexes[1]][gridPosNew.x][gridPosNew.y][0] + 1;
+        grid[passIndexes[1]][gridPosNew.x][gridPosNew.y][length] = pi;
+        grid[passIndexes[1]][gridPosNew.x][gridPosNew.y][0] = length;
     }`;
     const computeShaderCode = `
-    ${bindings}
+    @group(0) @binding(0) var<storage, read_write> interaction : vec4<u32>;
+    @group(0) @binding(1) var<storage, read_write> positions : array<vec2<f32>, ${count}>;
+    @group(0) @binding(2) var<storage, read_write> positionsFuture : array<vec2<f32>, ${count}>;
+    @group(0) @binding(3) var<storage, read_write> velVis : array<vec4<f32>, ${count}>;
+    @group(0) @binding(4) var<storage, read_write> densities : array<f32, ${count}>;
+    @group(0) @binding(5) var<storage, read_write> grid : array<array<array<array<u32, ${cellCapacity}>, ${cellsY}>, ${cellsX}>, 2>;
+    @group(0) @binding(6) var<storage, read_write> passIndexes : array<u32, 3>;
+    @group(0) @binding(7) var<storage, read_write> out : array<vec4<f32>, ${count}>;
     @compute @workgroup_size(${workgroupX}, 1, 1) fn main(
         @builtin(global_invocation_id) id: vec3u
     ) {
@@ -290,8 +250,12 @@
     ${fnUpdateDensityViscosity}
     ${fnApplyForce}
 
-    ${fnCalcPressureForce}
-    ${gridFunctions}
+    fn posToGridPos(pos: vec2<f32>) -> vec2<i32> {
+        return vec2<i32>(
+            i32(floor(pos.x / ${cellEdge})) + 1,
+            i32(floor(pos.y / ${cellEdge})) + 1,
+        );
+    }
     `;
 
     const verticesBuffer = device.createBuffer({
@@ -489,7 +453,7 @@
             
             acc += dt;
             iteration = 0;
-            iterationsMax = (dt / fixedFrametime)<<2;
+            iterationsMax = (dt / fixedFrametime)<<1;
             while (acc > fixedFrametime) {
                 makePasses();
                 acc -= fixedFrametime;

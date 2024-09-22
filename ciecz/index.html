@@ -8,13 +8,11 @@
 <body>
 <h1>Symulacja cieczy</h1>
 <p>Lewy przycisk myszy odpycha ciecz (lub przyciąga, gdy przytrzymasz ctrl)</p>
-<form>
-    <label>
-        Ilość
-        <input type="range" id="count" step="100" min="1000" max="15000" value="3000" oninput="count_out.value = count.value">
-        <output for="count" id="count_out">3000</output>
-    </label>
-</form>
+<label>
+    Ilość
+    <input type="range" id="count" step="100" min="1000" max="12000" value="3000" oninput="count_out.value = count.value">
+    <output for="count" id="count_out">3000</output>
+</label>
 <label>
     Grawitacja
     <input type="range" id="G" step="0.0001" min="0" max="0.02" value="0.0098" oninput="G_out.value = G.value">
@@ -36,7 +34,6 @@
     const wallDamp = 0.99;
     const drawRadius = 16;
     const cellCapacity = 16;
-    // const G = 0.0098;
     const explosionSize = 7;
     
     const futureFrametime = 5;
@@ -240,12 +237,11 @@
     const computeShaderCode = `
     @group(0) @binding(0) var<storage, read_write> interaction : array<f32, 7>;
     @group(0) @binding(1) var<storage, read_write> positions : array<array<vec2<f32>, ${maxCount}>, 2>;
-    @group(0) @binding(2) var<storage, read_write> todo : array<vec2<f32>, ${maxCount}>;
-    @group(0) @binding(3) var<storage, read_write> velVis : array<vec4<f32>, ${maxCount}>;
-    @group(0) @binding(4) var<storage, read_write> densities : array<f32, ${maxCount}>;
-    @group(0) @binding(5) var<storage, read_write> grid : array<array<array<array<u32, ${cellCapacity}>, ${cellsY}>, ${cellsX}>, 2>;
-    @group(0) @binding(6) var<storage, read_write> passIndexes : array<u32, 3>;
-    @group(0) @binding(7) var<storage, read_write> out : array<vec4<f32>, ${maxCount}>;
+    @group(0) @binding(2) var<storage, read_write> velVis : array<vec4<f32>, ${maxCount}>;
+    @group(0) @binding(3) var<storage, read_write> densities : array<f32, ${maxCount}>;
+    @group(0) @binding(4) var<storage, read_write> grid : array<array<array<array<u32, ${cellCapacity}>, ${cellsY}>, ${cellsX}>, 2>;
+    @group(0) @binding(5) var<storage, read_write> passIndexes : array<u32, 3>;
+    @group(0) @binding(6) var<storage, read_write> out : array<vec4<f32>, ${maxCount}>;
     @compute @workgroup_size(${workgroupX}, 1, 1) fn main(
         @builtin(global_invocation_id) id: vec3u
     ) {
@@ -300,10 +296,6 @@
     const positionsBuffer = device.createBuffer({
         size: maxCount * 8 * 2,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST
-    });
-    const forcesBuffer = device.createBuffer({
-        size: maxCount * 8,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
     });
     const velVisBuffer = device.createBuffer({
         size: maxCount * 8 * 2,
@@ -366,11 +358,6 @@
                             visibility: GPUShaderStage.COMPUTE,
                             buffer: { type: "storage" },
                         },
-                        {
-                            binding: 7,
-                            visibility: GPUShaderStage.COMPUTE,
-                            buffer: { type: "storage" },
-                        },
                     ],
                 })
             ],
@@ -385,12 +372,11 @@
         entries: [
             { binding: 0, resource: { buffer: interactionBuffer } },
             { binding: 1, resource: { buffer: positionsBuffer } },
-            { binding: 2, resource: { buffer: forcesBuffer } },
-            { binding: 3, resource: { buffer: velVisBuffer } },
-            { binding: 4, resource: { buffer: densitiesBuffer } },
-            { binding: 5, resource: { buffer: gridBuffer } },
-            { binding: 6, resource: { buffer: passIndexesBuffer } },
-            { binding: 7, resource: { buffer: computeOutBuffer } },
+            { binding: 2, resource: { buffer: velVisBuffer } },
+            { binding: 3, resource: { buffer: densitiesBuffer } },
+            { binding: 4, resource: { buffer: gridBuffer } },
+            { binding: 5, resource: { buffer: passIndexesBuffer } },
+            { binding: 6, resource: { buffer: computeOutBuffer } },
         ]
     });
     const emptyGridBuffer = device.createBuffer({

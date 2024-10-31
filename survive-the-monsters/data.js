@@ -4,8 +4,8 @@ export const PHYSICS_FPS = 60;
 export const SCENE_WIDTH = 1920;
 export const SCENE_HEIGHT = 1080;
 export const SPRITE_SIZE = 128;
-export const ENEMIES_COUNT_MAX = 2**16;
-export const BULLETS_COUNT_MAX = 2**30;
+export const ENEMIES_COUNT_MAX = 2**12;
+export const BULLETS_COUNT_MAX = 2**16;
 
 export const playerSpeed = 6;
 export const enemyTypes = [

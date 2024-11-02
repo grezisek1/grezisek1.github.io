@@ -1,7 +1,5 @@
 import {
     PHYSICS_FPS,
-    ENEMIES_COUNT_MAX,
-    BULLETS_COUNT_MAX,
     bulletTypes,
     direction,
     position,
@@ -12,9 +10,9 @@ import {
     progressMilestonesSpawnIntervals,
     progressMilestonesWeaponChance,
     gridPos,
-    MAP_BORDER_PX,
     CELL_SIZE,
     MAP_BORDER,
+    sprites,
 } from "./data.js";
 const spawnRadius = Math.max(canvas.width, canvas.height) / 2;
 const dt = 1 / PHYSICS_FPS;
@@ -36,8 +34,12 @@ class State {
         this.kills = 0;
         this.milestone = 0;
         this.weapons = [0];
+        weapons.innerHTML = "";
+        weapons.appendChild(sprites.bullets[0].cloneNode());
         this.score = 0;
         this.highscore = 0;
+        
+        progress.value = 0;
         try {
             this.highscore = Number(localStorage.getItem("highscore"));
         } catch (_) {}
@@ -83,6 +85,7 @@ export default class GameplayController {
         this.#spawnBullets();
 
         this.state.time += dt;
+        progress.value = this.state.time / progressMilestones[progressMilestones.length-1];
         
         const nextMilestone = this.state.milestone + 1;
         if (nextMilestone == progressMilestones.length) {
@@ -107,6 +110,8 @@ export default class GameplayController {
         this.state.weaponSpawnedInMilestone = true;
 
         this.showAlert(`You found ${bulletTypes[typeIndex].name}`);
+        
+        weapons.appendChild(sprites.bullets[typeIndex].cloneNode());
     }
     #trySpawnEnemy() {
         this.state.enemySpawnTimeAcc += dt;
@@ -212,12 +217,17 @@ export default class GameplayController {
 
     showAlert(text) {
         this.state.playing = false;
-        alert_text.innerHTML = text;
+        if (alert_text.innerHTML.length) {
+            alert_text.innerHTML = `${alert_text.innerHTML}\n${text}`;
+        } else {
+            alert_text.innerHTML = text;
+        }
         close_alert.addEventListener("click", this.#closeAlert);
+        close_alert.focus();
     }
     #closeAlert = () => {
         alert_text.innerHTML = "";
-        this.state.playing = true;
         close_alert.removeEventListener("click", this.#closeAlert);
+        this.state.playing = true;
     };
 }

@@ -102,12 +102,39 @@
             color: #fff;
             font-weight: bold;
         }
+        #progress {
+            position: absolute;
+            top: 2px;
+            left: 12px;
+            width: calc(100% - 24px);
+            accent-color: lime;
+        }
+        #weapons {
+            position: absolute;
+            top: 16px;
+            left: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: start;
+            place-items: center;
+            gap: 8px;
+            max-width: calc(100% - 24px);
+            padding: 12px;
+            background: #0006;
+
+            > img {
+                width: 24px;
+                height: 24px;
+            }
+        }
     </style>
 </head>
 <body>
     <canvas id="canvas" width="1920" height="1080"></canvas>
     <span id="highscore">0</span>
     <span id="score">0</span>
+    <progress id="progress"></progress>
+    <span id="weapons"></span>
     <img id="map" alt="">
     <div id="alert_container">
         <span id="alert_text"></span>

@@ -85,8 +85,8 @@ export const bulletTypes = [
     },
     {
         name: "cannon",
-        velocity: 1600,
-        velocityDamp: 0.97,
+        velocity: 1800,
+        velocityDamp: 0.96,
         reloadTime: 8,
         despawnTime: 32,
         damage: 8,
@@ -96,7 +96,7 @@ export const bulletTypes = [
     {
         name: "pink mine",
         velocity: 400,
-        velocityDamp: 0.5,
+        velocityDamp: 0.7,
         reloadTime: 2.1,
         despawnTime: 600,
         damage: 3,
@@ -105,8 +105,8 @@ export const bulletTypes = [
     },
     {
         name: "accel",
-        velocity: 100,
-        velocityDamp: 1.01,
+        velocity: 90,
+        velocityDamp: 1.015,
         reloadTime: 3.2,
         despawnTime: 32,
         damage: 12,
@@ -186,7 +186,7 @@ export const progressMilestonesEnemies = [
     [1],
     [0, 1, 1],
     [2],
-    [0, 2, 6],
+    [0, 0, 0, 2, 2, 6],
 
     [1, 2],
     [0, 1, 2, 3],
@@ -207,7 +207,7 @@ export const progressMilestonesSpawnIntervals = [
     1,
     2,
 
-    2,
+    0.3,
     1,
     3,
     3,
@@ -221,7 +221,7 @@ export const progressMilestonesWeaponChance = [
     0,
     0.1,
     1,
-    0,
+    1,
     0.1,
     0,
 
